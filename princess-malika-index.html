@@ -1,101 +1,124 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Princess Malika Adventure</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Princess Malika's Adventure</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
-      background: linear-gradient(to top right, #ffccd5, #ffe4e1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: 'Comic Sans MS', cursive;
+      background: #ffe6f0;
       overflow: hidden;
     }
-    #game {
-      text-align: center;
-      background: white;
-      padding: 30px;
-      border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      width: 90%;
-      max-width: 500px;
+    canvas {
+      display: block;
+      margin: 0 auto;
     }
-    h1 {
-      color: #e75480;
-    }
-    #emoji {
-      font-size: 60px;
-      margin: 20px;
-    }
-    #input {
-      padding: 10px;
-      font-size: 20px;
-      border: 2px solid #e75480;
-      border-radius: 10px;
-      margin-bottom: 20px;
+    #start-screen, #end-screen {
+      position: absolute;
       width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 999;
     }
-    #btn {
-      background-color: #e75480;
+    button {
+      padding: 10px 20px;
+      font-size: 20px;
+      background-color: #ff66b2;
       color: white;
       border: none;
-      padding: 10px 20px;
       border-radius: 10px;
-      font-size: 18px;
       cursor: pointer;
-    }
-    #message {
       margin-top: 20px;
-      font-size: 20px;
-      color: #444;
     }
   </style>
 </head>
 <body>
-  <div id="game">
-    <h1>🌟 Princess Malika Emoji Challenge 🌟</h1>
-    <div id="emoji">😊</div>
-    <input id="input" placeholder="Type the emoji here..." />
-    <button id="btn">Submit</button>
-    <div id="message"></div>
+  <div id="start-screen">
+    <h1>Princess Malika's Adventure</h1>
+    <p>Help Princess Malika collect hearts and find forgiveness 💖</p>
+    <button onclick="startGame()">Start</button>
   </div>
-
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="end-screen" style="display:none">
+    <h2>You Did It, Princess! 👑</h2>
+    <p>You fixed the broken heart. Forgiveness is yours!</p>
+    <p>"Princess Malika, this castle isn’t just fantasy—it’s built on everything I feel for you."</p>
+    <button onclick="location.reload()">Play Again</button>
+  </div>
   <script>
-    const emojis = ['😊', '😍', '🥰', '😘', '😻', '🌸', '💖', '👑', '💕', '💐'];
-    const emojiDiv = document.getElementById('emoji');
-    const input = document.getElementById('input');
-    const btn = document.getElementById('btn');
-    const message = document.getElementById('message');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let princess = { x: 50, y: 300, width: 40, height: 40, dy: 0, onGround: true };
+    let gravity = 0.5;
+    let hearts = [
+      { x: 200, y: 320 },
+      { x: 400, y: 320 },
+      { x: 600, y: 320 }
+    ];
+    let collected = 0;
+    let gameRunning = false;
 
-    let score = 0;
-
-    function newEmoji() {
-      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-      emojiDiv.textContent = emoji;
+    function drawPrincess() {
+      ctx.fillStyle = '#ff99cc';
+      ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
     }
 
-    btn.onclick = () => {
-      if (input.value.trim() === emojiDiv.textContent) {
-        score++;
-        if (score >= 5) {
-          message.innerHTML = "👑 Princess Malika, you win! Ayoub loves you 💖";
-          btn.disabled = true;
-        } else {
-          message.textContent = "Correct! Keep going...";
-          newEmoji();
-        }
-      } else {
-        message.textContent = "Oops! Try again 💫";
-      }
-      input.value = "";
-    };
+    function drawHearts() {
+      ctx.fillStyle = 'red';
+      hearts.forEach(h => ctx.fillRect(h.x, h.y, 20, 20));
+    }
 
-    newEmoji();
+    function jump() {
+      if (princess.onGround) {
+        princess.dy = -10;
+        princess.onGround = false;
+      }
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPrincess();
+      drawHearts();
+
+      princess.y += princess.dy;
+      princess.dy += gravity;
+
+      if (princess.y > 300) {
+        princess.y = 300;
+        princess.dy = 0;
+        princess.onGround = true;
+      }
+
+      hearts = hearts.filter(h => {
+        const collide = princess.x < h.x + 20 && princess.x + princess.width > h.x && princess.y < h.y + 20 && princess.y + princess.height > h.y;
+        if (collide) collected++;
+        return !collide;
+      });
+
+      if (collected === 3) {
+        gameRunning = false;
+        document.getElementById('end-screen').style.display = 'flex';
+      }
+
+      if (gameRunning) requestAnimationFrame(update);
+    }
+
+    function startGame() {
+      document.getElementById('start-screen').style.display = 'none';
+      gameRunning = true;
+      update();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') jump();
+    });
   </script>
 </body>
 </html>
